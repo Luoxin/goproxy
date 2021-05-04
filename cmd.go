@@ -30,7 +30,7 @@ type ModInfo struct {
 	GoModSum string `json:"GoModSum"`
 }
 
-func GetModBaseInfo(modPath string) (*ModBaseInfo, error) {
+func GetModBaseInfoFromLocal(modPath string) (*ModBaseInfo, error) {
 	ctx := context.TODO()
 	ctx, _ = context.WithTimeout(ctx, time.Second*5)
 
@@ -74,7 +74,7 @@ func GetModBaseInfo(modPath string) (*ModBaseInfo, error) {
 	return &modIndo, nil
 }
 
-func GetModInfo(modPath string) (*ModInfo, error) {
+func GetModInfoFromLocal(modPath string) (*ModInfo, error) {
 	ctx := context.TODO()
 	ctx, _ = context.WithTimeout(ctx, time.Second*5)
 

@@ -61,7 +61,7 @@ func main() {
 	app.Server().Logger = log.New()
 
 	app.Get("*/@latest", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModBaseInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
+		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
@@ -143,7 +143,7 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModBaseInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
+		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
@@ -164,7 +164,7 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
+		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
@@ -189,7 +189,7 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
+		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
