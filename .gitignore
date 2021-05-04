@@ -1085,3 +1085,5 @@ cwallet.sso.lck
 # Local History for Visual Studio Code
 .history/
 
+.idea/
+.vscode/
