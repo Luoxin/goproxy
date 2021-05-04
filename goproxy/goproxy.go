@@ -1,4 +1,4 @@
-package main
+package goproxy
 
 import (
 	"context"
@@ -33,7 +33,7 @@ type ModVersionRsp struct {
 	Time    time.Time `json:"Time"`
 }
 
-func main() {
+func Start() {
 	client := resty.New().
 		SetTimeout(time.Second * 5).
 		SetRetryMaxWaitTime(time.Second * 5).
