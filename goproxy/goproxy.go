@@ -35,7 +35,7 @@ type ModVersionRsp struct {
 
 type Goproxy struct {
 	client *resty.Client
-	app    *fiber.App
+	WebApp *fiber.App
 }
 
 func NewGoproxy() *Goproxy {
@@ -50,7 +50,7 @@ func (p *Goproxy) Init() error {
 		SetLogger(log.New()).
 		SetDebug(true)
 
-	p.app = fiber.New(fiber.Config{
+	p.WebApp = fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			return ctx.Status(500).SendString(err.Error())
 		},
@@ -67,9 +67,9 @@ func (p *Goproxy) Init() error {
 		ReduceMemoryUsage:        true,
 	})
 
-	p.app.Server().Logger = log.New()
+	p.WebApp.Server().Logger = log.New()
 
-	p.app.Get("*/@latest", func(ctx *fiber.Ctx) error {
+	p.WebApp.Get("*/@latest", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
 		if err != nil {
 			log.Errorf("err:%v", err)
@@ -90,7 +90,7 @@ func (p *Goproxy) Init() error {
 		})
 	})
 
-	p.app.Get("*/@v/list", func(ctx *fiber.Ctx) error {
+	p.WebApp.Get("*/@v/list", func(ctx *fiber.Ctx) error {
 		c := context.TODO()
 		c, _ = context.WithTimeout(c, time.Second*5)
 
@@ -151,7 +151,7 @@ func (p *Goproxy) Init() error {
 		return ctx.SendString(goModVersions.Versions.Join("\n"))
 	})
 
-	p.app.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
+	p.WebApp.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
@@ -172,7 +172,7 @@ func (p *Goproxy) Init() error {
 		})
 	})
 
-	p.app.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
+	p.WebApp.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
@@ -197,7 +197,7 @@ func (p *Goproxy) Init() error {
 		return ctx.SendString(string(goMod))
 	})
 
-	p.app.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
+	p.WebApp.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
@@ -227,7 +227,7 @@ func (p *Goproxy) Init() error {
 }
 
 func (p *Goproxy) Run() error {
-	return p.app.Listen("0.0.0.0:19704")
+	return p.WebApp.Listen("0.0.0.0:19704")
 }
 
 func Start() error {
