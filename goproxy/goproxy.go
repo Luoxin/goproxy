@@ -33,15 +33,24 @@ type ModVersionRsp struct {
 	Time    time.Time `json:"Time"`
 }
 
-func Start() {
-	client := resty.New().
+type Goproxy struct {
+	client *resty.Client
+	app    *fiber.App
+}
+
+func NewGoproxy() *Goproxy {
+	return &Goproxy{}
+}
+
+func (p *Goproxy) Init() error {
+	p.client = resty.New().
 		SetTimeout(time.Second * 5).
 		SetRetryMaxWaitTime(time.Second * 5).
 		SetRetryWaitTime(time.Second).
 		SetLogger(log.New()).
 		SetDebug(true)
 
-	app := fiber.New(fiber.Config{
+	p.app = fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 			return ctx.Status(500).SendString(err.Error())
 		},
@@ -58,14 +67,14 @@ func Start() {
 		ReduceMemoryUsage:        true,
 	})
 
-	app.Server().Logger = log.New()
+	p.app.Server().Logger = log.New()
 
-	app.Get("*/@latest", func(ctx *fiber.Ctx) error {
+	p.app.Get("*/@latest", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
-			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
+			resp, err := p.client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
 				log.Errorf("err:%v", err)
 				return err
@@ -81,7 +90,7 @@ func Start() {
 		})
 	})
 
-	app.Get("*/@v/list", func(ctx *fiber.Ctx) error {
+	p.app.Get("*/@v/list", func(ctx *fiber.Ctx) error {
 		c := context.TODO()
 		c, _ = context.WithTimeout(c, time.Second*5)
 
@@ -112,7 +121,7 @@ func Start() {
 
 			log.Error(string(output))
 
-			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
+			resp, err := p.client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
 				log.Errorf("err:%v", err)
 				return err
@@ -142,12 +151,12 @@ func Start() {
 		return ctx.SendString(goModVersions.Versions.Join("\n"))
 	})
 
-	app.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
+	p.app.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModBaseInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
-			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
+			resp, err := p.client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
 				log.Errorf("err:%v", err)
 				return err
@@ -163,12 +172,12 @@ func Start() {
 		})
 	})
 
-	app.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
+	p.app.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
-			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
+			resp, err := p.client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
 				log.Errorf("err:%v", err)
 				return err
@@ -188,12 +197,12 @@ func Start() {
 		return ctx.SendString(string(goMod))
 	})
 
-	app.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
+	p.app.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
 		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
-			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
+			resp, err := p.client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
 				log.Errorf("err:%v", err)
 				return err
@@ -214,5 +223,27 @@ func Start() {
 		return ctx.SendString(string(zipFile))
 	})
 
-	_ = app.Listen("0.0.0.0:19704")
+	return nil
+}
+
+func (p *Goproxy) Run() error {
+	return p.app.Listen("0.0.0.0:19704")
+}
+
+func Start() error {
+	p := NewGoproxy()
+
+	err := p.Init()
+	if err != nil {
+		log.Errorf("err:%v", err)
+		return err
+	}
+
+	err = p.Run()
+	if err != nil {
+		log.Errorf("err:%v", err)
+		return err
+	}
+
+	return nil
 }
