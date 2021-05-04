@@ -61,7 +61,7 @@ func main() {
 	app.Server().Logger = log.New()
 
 	app.Get("*/@latest", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
+		modInfo, err := GetModBaseInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), "/@latest")+"@latest", "/"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
@@ -143,13 +143,7 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.info", func(ctx *fiber.Ctx) error {
-		c := context.TODO()
-		c, _ = context.WithTimeout(c, time.Second*5)
-
-		// cmd := exec.CommandContext(c, "go", "mod", "download", "-json",
-		// 	strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/")+"@"+ctx.Params("version"))
-
-		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
+		modInfo, err := GetModBaseInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.info", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 
@@ -170,37 +164,9 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.mod", func(ctx *fiber.Ctx) error {
-		c := context.TODO()
-		c, _ = context.WithTimeout(c, time.Second*5)
-
-		cmd := exec.CommandContext(c, "go", "mod", "download", "-json",
-			strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/")+"@"+ctx.Params("version"))
-
-		updateEnv(cmd)
-		stdout, err := cmd.Output()
+		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
-			log.Error(err)
-			if err := c.Err(); errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("command %v: %w", cmd.Args, err)
-			}
-
-			output := stdout
-			if len(output) > 0 {
-				m := map[string]interface{}{}
-				if err := json.Unmarshal(output, &m); err != nil {
-					return err
-				}
-
-				if es, ok := m["Error"].(string); ok {
-					output = []byte(es)
-				}
-			} else if ee, ok := err.(*exec.ExitError); ok {
-				output = ee.Stderr
-			} else {
-				return err
-			}
-
-			log.Error(string(output))
+			log.Errorf("err:%v", err)
 
 			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
@@ -212,25 +178,7 @@ func main() {
 			return ctx.SendString(resp.String())
 		}
 
-		log.Infof("get:%v", string(stdout))
-
-		var goModInfo struct {
-			Path     string `json:"Path"`
-			Version  string `json:"Version"`
-			Info     string `json:"Info"`
-			GoMod    string `json:"GoMod"`
-			Zip      string `json:"Zip"`
-			Dir      string `json:"Dir"`
-			Sum      string `json:"Sum"`
-			GoModSum string `json:"GoModSum"`
-		}
-		err = json.Unmarshal(stdout, &goModInfo)
-		if err != nil {
-			log.Errorf("err:%v", err)
-			return err
-		}
-
-		goMod, err := ioutil.ReadFile(goModInfo.GoMod)
+		goMod, err := ioutil.ReadFile(modInfo.GoMod)
 		if err != nil {
 			log.Errorf("err:%v", err)
 			return err
@@ -241,37 +189,9 @@ func main() {
 	})
 
 	app.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
-		c := context.TODO()
-		c, _ = context.WithTimeout(c, time.Second*5)
-
-		cmd := exec.CommandContext(c, "go", "mod", "download", "-json",
-			strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/")+"@"+ctx.Params("version"))
-
-		updateEnv(cmd)
-		stdout, err := cmd.Output()
+		modInfo, err := GetModInfo(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
-			log.Error(err)
-			if err := c.Err(); errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("command %v: %w", cmd.Args, err)
-			}
-
-			output := stdout
-			if len(output) > 0 {
-				m := map[string]interface{}{}
-				if err := json.Unmarshal(output, &m); err != nil {
-					return err
-				}
-
-				if es, ok := m["Error"].(string); ok {
-					output = []byte(es)
-				}
-			} else if ee, ok := err.(*exec.ExitError); ok {
-				output = ee.Stderr
-			} else {
-				return err
-			}
-
-			log.Error(string(output))
+			log.Errorf("err:%v", err)
 
 			resp, err := client.R().Get(fmt.Sprintf("%s%s", upstreamProxy, ctx.Path()))
 			if err != nil {
@@ -283,26 +203,8 @@ func main() {
 			return ctx.SendString(resp.String())
 		}
 
-		log.Infof("get:%v", string(stdout))
-
-		var goModInfo struct {
-			Path     string `json:"Path"`
-			Version  string `json:"Version"`
-			Info     string `json:"Info"`
-			GoMod    string `json:"GoMod"`
-			Zip      string `json:"Zip"`
-			Dir      string `json:"Dir"`
-			Sum      string `json:"Sum"`
-			GoModSum string `json:"GoModSum"`
-		}
-		err = json.Unmarshal(stdout, &goModInfo)
-		if err != nil {
-			log.Errorf("err:%v", err)
-			return err
-		}
-
 		ctx.Response().Header.SetContentType("application/zip")
-		zipFile, err := ioutil.ReadFile(goModInfo.Zip)
+		zipFile, err := ioutil.ReadFile(modInfo.Zip)
 		if err != nil {
 			log.Errorf("err:%v", err)
 			return err
