@@ -155,7 +155,7 @@ func (p *Goproxy) Init() error {
 	})
 
 	p.WebApp.Get("*/@v/:version.zip", func(ctx *fiber.Ctx) error {
-		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.mod", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
+		modInfo, err := GetModInfoFromLocal(strings.TrimPrefix(strings.TrimSuffix(ctx.Path(), fmt.Sprintf("/@v/%s.zip", ctx.Params("version"))), "/") + "@" + ctx.Params("version"))
 		if err != nil {
 			log.Errorf("err:%v", err)
 

@@ -43,7 +43,7 @@ type ModVersions struct {
 
 func GetModBaseInfoFromLocal(modPath string) (*ModBaseInfo, error) {
 	ctx := context.TODO()
-	ctx, _ = context.WithTimeout(ctx, time.Second*5)
+	ctx, _ = context.WithTimeout(ctx, time.Minute)
 
 	cmd := exec.CommandContext(ctx, "go", "list", "-json", "-m", modPath)
 	updateEnv(cmd)
@@ -87,7 +87,7 @@ func GetModBaseInfoFromLocal(modPath string) (*ModBaseInfo, error) {
 
 func GetModInfoFromLocal(modPath string) (*ModInfo, error) {
 	ctx := context.TODO()
-	ctx, _ = context.WithTimeout(ctx, time.Second*5)
+	ctx, _ = context.WithTimeout(ctx, time.Minute)
 
 	cmd := exec.CommandContext(ctx, "go", "mod", "download", "-json", modPath)
 	updateEnv(cmd)
@@ -131,7 +131,7 @@ func GetModInfoFromLocal(modPath string) (*ModInfo, error) {
 
 func GetModVersionsFromLocal(modPath string) (*ModVersions, error) {
 	ctx := context.TODO()
-	ctx, _ = context.WithTimeout(ctx, time.Second*5)
+	ctx, _ = context.WithTimeout(ctx, time.Minute)
 
 	cmd := exec.CommandContext(ctx, "go", "list", "-json", "-m", "-versions", modPath)
 	updateEnv(cmd)
